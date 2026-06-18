@@ -1,0 +1,262 @@
+// ============================================
+// PRISMA SCHEMA - MySQL VERSION (untuk shared hosting / VPS)
+// ============================================
+// Gunakan schema ini jika deploy ke hosting dengan MySQL
+// Cara pakai:
+//   1. Backup file schema.prisma lama
+//   2. Copy file ini ke prisma/schema.prisma
+//   3. Set DATABASE_URL di .env: mysql://user:pass@host:3306/dbname
+//   4. Jalankan: bun run db:push
+// ============================================
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-1.1.x"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== AUTH & USERS ====================
+
+model User {
+  id           String    @id @default(cuid())
+  username     String    @unique
+  password     String
+  name         String
+  email        String?   @unique
+  role         String    @default("PENGURUS")
+  avatar       String?   @db.Text
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  pengurus     Pengurus?
+  auditLogs    AuditLog[]
+  sessions     Session[]
+
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+// ==================== MASTER DATA ====================
+
+model Desa {
+  id          String     @id @default(cuid())
+  namaDesa    String
+  alamat      String?    @db.Text
+  kecamatan   String     @default("Cikampek")
+  kabupaten   String     @default("Karawang")
+  provinsi    String     @default("Jawa Barat")
+  kodePos     String?
+  kepalaDesa  String?
+  kontak      String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  pengurus    Pengurus[]
+
+  @@map("desa")
+}
+
+model Jabatan {
+  id          String     @id @default(cuid())
+  namaJabatan String
+  urutan      Int        @default(99)
+  kategori    String     @default("PENGURUS")
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  pengurus    Pengurus[]
+
+  @@map("jabatan")
+}
+
+model Pengurus {
+  id            String    @id @default(cuid())
+  nipd          String?
+  namaLengkap   String
+  nik           String?
+  tempatLahir   String?
+  tanggalLahir  DateTime?
+  jenisKelamin  String?
+  foto          String?   @db.Text
+  desaId        String?
+  desa          Desa?     @relation(fields: [desaId], references: [id], onDelete: SetNull)
+  jabatanId     String?
+  jabatan       Jabatan?  @relation(fields: [jabatanId], references: [id], onDelete: SetNull)
+  masaJabatan   String?
+  alamat        String?   @db.Text
+  noHp          String?
+  email         String?
+  statusAktif   Boolean   @default(true)
+  userId        String?   @unique
+  user          User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([desaId])
+  @@index([jabatanId])
+  @@map("pengurus")
+}
+
+// ==================== CONTENT MANAGEMENT ====================
+
+model Berita {
+  id              String    @id @default(cuid())
+  judul           String
+  slug            String    @unique
+  kategori        String    @default("Umum")
+  thumbnail       String?   @db.Text
+  ringkasan       String?   @db.Text
+  isi             String    @db.LongText
+  penulis         String?
+  status          String    @default("DRAFT")
+  tags            String?
+  seoTitle        String?
+  metaDescription String?   @db.Text
+  metaKeywords    String?
+  featured        Boolean   @default(false)
+  viewCount       Int       @default(0)
+  publishedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([status, publishedAt])
+  @@map("berita")
+}
+
+model Artikel {
+  id              String    @id @default(cuid())
+  judul           String
+  slug            String    @unique
+  kategori        String    @default("Umum")
+  thumbnail       String?   @db.Text
+  ringkasan       String?   @db.Text
+  isi             String    @db.LongText
+  penulis         String?
+  tags            String?
+  seoTitle        String?
+  metaDescription String?   @db.Text
+  metaKeywords    String?
+  viewCount       Int       @default(0)
+  publishedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([publishedAt])
+  @@map("artikel")
+}
+
+model Kegiatan {
+  id              String   @id @default(cuid())
+  namaKegiatan    String
+  slug            String   @unique
+  tanggal         DateTime
+  lokasi          String?
+  penanggungJawab String?
+  deskripsi       String?  @db.Text
+  fotos           String?  @db.Text
+  videoUrl        String?  @db.Text
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("kegiatan")
+}
+
+model Agenda {
+  id             String    @id @default(cuid())
+  namaAgenda     String
+  tanggalMulai   DateTime
+  tanggalSelesai DateTime?
+  lokasi         String?
+  deskripsi      String?    @db.Text
+  status         String     @default("MENDATANG")
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  @@map("agenda")
+}
+
+model Galeri {
+  id          String   @id @default(cuid())
+  judul       String
+  kategori    String   @default("FOTO")
+  url         String   @db.Text
+  thumbnail   String?  @db.Text
+  deskripsi   String?  @db.Text
+  createdAt   DateTime @default(now())
+
+  @@map("galeri")
+}
+
+model Download {
+  id            String   @id @default(cuid())
+  judul         String
+  kategori      String   @default("DOKUMEN")
+  fileUrl       String   @db.Text
+  fileSize      String?
+  fileType      String?
+  deskripsi     String?  @db.Text
+  downloadCount Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  @@map("download")
+}
+
+// ==================== SETTINGS ====================
+
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String?  @db.LongText
+  category  String   @default("GENERAL")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("setting")
+}
+
+// ==================== CONTACT MESSAGES ====================
+
+model PesanKontak {
+  id        String   @id @default(cuid())
+  nama      String
+  email     String
+  telepon   String?
+  subjek    String
+  pesan     String   @db.Text
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("pesan_kontak")
+}
+
+// ==================== AUDIT LOG ====================
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userName  String?
+  action    String
+  module    String
+  detail    String?  @db.Text
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("audit_log")
+}
