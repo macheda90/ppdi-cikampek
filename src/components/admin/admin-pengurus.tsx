@@ -79,6 +79,7 @@ interface FormState {
 const emptyForm: FormState = {
   namaLengkap: '',
   nipd: '',
+
   nik: '',
   tempatLahir: '',
   tanggalLahir: '',
@@ -110,6 +111,8 @@ export function AdminPengurus() {
   const [editing, setEditing] = useState<PengurusWithRelations | null>(null)
   const [form, setForm] = useState<FormState>(emptyForm)
   const [saving, setSaving] = useState(false)
+  const [fotoFile, setFotoFile] = useState<File | null>(null)
+
 
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
@@ -177,8 +180,10 @@ export function AdminPengurus() {
       password: '',
       role: item.user?.role || 'PENGURUS',
     })
+    setFotoFile(null)
     setDialogOpen(true)
   }
+
 
   const handleSave = async () => {
     if (!form.namaLengkap.trim()) {
@@ -193,10 +198,27 @@ export function AdminPengurus() {
         delete payload.password
         delete payload.role
       }
+
+      if (fotoFile) {
+        const fd = new FormData()
+        fd.append('file', fotoFile)
+        const uploadRes = await fetch('/api/upload/pengurus-foto', {
+          method: 'POST',
+          body: fd,
+        })
+        const uploadJson = (await uploadRes.json()) as { url?: string; error?: string }
+        if (!uploadRes.ok || !uploadJson.url) {
+          throw new Error(uploadJson.error || 'Gagal upload foto')
+        }
+        payload.foto = uploadJson.url
+      }
+
       if (editing) {
         await apiPut(`/api/pengurus/${editing.id}`, payload)
         toast.success('Pengurus berhasil diperbarui')
       } else {
+        // NIPD tidak dikirim dari client saat create (backend yang generate)
+        delete (payload as Record<string, unknown>).nipd
         await apiPost('/api/pengurus', payload)
         toast.success('Pengurus berhasil ditambahkan')
       }
@@ -208,6 +230,7 @@ export function AdminPengurus() {
       setSaving(false)
     }
   }
+
 
   const handleDelete = async () => {
     if (!deleteId) return
@@ -357,6 +380,7 @@ export function AdminPengurus() {
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editing ? 'Edit Pengurus' : 'Tambah Pengurus'}</DialogTitle>
+
             <DialogDescription>
               {editing ? 'Perbarui data pengurus' : 'Tambah pengurus baru ke sistem'}
             </DialogDescription>
@@ -370,13 +394,7 @@ export function AdminPengurus() {
                 onChange={(e) => setForm({ ...form, namaLengkap: e.target.value })}
               />
             </div>
-            <div>
-              <Label>NIPD</Label>
-              <Input
-                value={form.nipd}
-                onChange={(e) => setForm({ ...form, nipd: e.target.value })}
-              />
-            </div>
+
             <div>
               <Label>NIK</Label>
               <Input
@@ -415,13 +433,21 @@ export function AdminPengurus() {
               </Select>
             </div>
             <div>
-              <Label>URL Foto</Label>
+              <Label>Foto</Label>
               <Input
-                value={form.foto}
-                onChange={(e) => setForm({ ...form, foto: e.target.value })}
-                placeholder="https://..."
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const f = e.target.files?.[0]
+                  if (f) setFotoFile(f)
+                  else setFotoFile(null)
+                }}
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                Jika kosong, foto tidak berubah.
+              </p>
             </div>
+
             <div>
               <Label>Desa</Label>
               <Select

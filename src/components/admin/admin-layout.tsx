@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useAppStore } from '@/lib/store'
 import { useTheme } from 'next-themes'
+
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -39,7 +40,6 @@ import {
   Moon,
   ChevronLeft,
   ChevronRight,
-  ShieldCheck,
   UserCircle,
   ExternalLink,
 } from 'lucide-react'
@@ -64,12 +64,10 @@ interface AdminLayoutProps {
   onNavigate: (view: string) => void
 }
 
-const ALL_NAV_SECTIONS: NavSection[] = [
+const ADMIN_NAV_SECTIONS: NavSection[] = [
   {
     title: 'Utama',
-    items: [
-      { label: 'Dashboard', view: 'admin-dashboard', icon: LayoutDashboard },
-    ],
+    items: [{ label: 'Dashboard', view: 'admin-dashboard', icon: LayoutDashboard }],
   },
   {
     title: 'Master Data',
@@ -106,17 +104,29 @@ const ALL_NAV_SECTIONS: NavSection[] = [
   },
 ]
 
-const VIEW_LABELS: Record<string, string> = Object.fromEntries(
-  ALL_NAV_SECTIONS.flatMap((s) => s.items.map((i) => [i.view, i.label]))
+const USER_NAV_SECTIONS: NavSection[] = [
+  {
+    title: 'Utama',
+    items: [{ label: 'Dashboard', view: 'user-dashboard', icon: LayoutDashboard }],
+  },
+  {
+    title: 'Publikasi',
+    items: [
+      { label: 'Berita', view: 'admin-berita', icon: Newspaper },
+      { label: 'Artikel', view: 'admin-artikel', icon: FileText },
+      { label: 'Kegiatan', view: 'admin-kegiatan', icon: Activity },
+      { label: 'Agenda', view: 'admin-agenda', icon: Calendar },
+    ],
+  },
+]
+
+const VIEW_LABELS_ADMIN: Record<string, string> = Object.fromEntries(
+  ADMIN_NAV_SECTIONS.flatMap((s) => s.items.map((i) => [i.view, i.label]))
 )
 
-interface SidebarContentProps {
-  collapsed: boolean
-  currentView: string
-  navSections: NavSection[]
-  onNavigate: (view: string) => void
-  onGoPublic: () => void
-}
+const VIEW_LABELS_USER: Record<string, string> = Object.fromEntries(
+  USER_NAV_SECTIONS.flatMap((s) => s.items.map((i) => [i.view, i.label]))
+)
 
 function SidebarContent({
   collapsed,
@@ -124,18 +134,24 @@ function SidebarContent({
   navSections,
   onNavigate,
   onGoPublic,
-}: SidebarContentProps) {
+}: {
+
+  collapsed: boolean
+  currentView: string
+  navSections: NavSection[]
+  onNavigate: (view: string) => void
+  onGoPublic: () => void
+}) {
   return (
     <div className="flex flex-col h-full">
-      {/* Logo */}
       <div
         className={cn(
           'flex items-center gap-3 h-16 border-b border-sidebar-border px-4',
           collapsed && 'justify-center px-2'
         )}
       >
-        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-[#0a3a64] flex items-center justify-center flex-shrink-0 shadow-md">
-          <ShieldCheck className="w-6 h-6 text-gold" />
+        <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 shadow-md">
+          <img src="/logo.svg" alt="Logo PPDI Cikampek" className="w-8 h-8" />
         </div>
         {!collapsed && (
           <div className="overflow-hidden">
@@ -145,7 +161,6 @@ function SidebarContent({
         )}
       </div>
 
-      {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-4 custom-scrollbar">
         {navSections.map((section) => (
           <div key={section.title} className="space-y-1">
@@ -184,7 +199,6 @@ function SidebarContent({
         ))}
       </nav>
 
-      {/* Footer */}
       {!collapsed && (
         <div className="border-t border-sidebar-border p-3">
           <Button
@@ -205,14 +219,16 @@ function SidebarContent({
 export function AdminLayout({ children, onLogout, currentView, onNavigate }: AdminLayoutProps) {
   const { authUser, goToPublic } = useAppStore()
   const { theme, setTheme } = useTheme()
+
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
 
-  // Fetch unread messages count (only when user is likely authenticated)
+  const isUserRole = authUser?.role === 'USER'
+
+  // only admin needs unread pesan count (user role menu doesn't include Pesan)
   useEffect(() => {
-    // Prevent noisy 401 logs while auth state is not ready.
-    if (!authUser) return
+    if (!authUser || isUserRole) return
 
     let active = true
     const fetchUnread = async () => {
@@ -232,20 +248,21 @@ export function AdminLayout({ children, onLogout, currentView, onNavigate }: Adm
       active = false
       clearInterval(interval)
     }
-  }, [currentView, authUser])
+  }, [authUser, currentView, isUserRole])
 
-  const navSections = useMemo(
-    () =>
-      ALL_NAV_SECTIONS.map((section) => ({
-        ...section,
-        items: section.items.map((item) =>
-          item.view === 'admin-pesan' && unreadCount > 0 ? { ...item, badge: unreadCount } : item
-        ),
-      })),
-    [unreadCount]
-  )
+  const navSections = useMemo(() => {
+    const base = isUserRole ? USER_NAV_SECTIONS : ADMIN_NAV_SECTIONS
+    if (isUserRole) return base
 
-  const pageTitle = VIEW_LABELS[currentView] || 'Dashboard'
+    return base.map((section) => ({
+      ...section,
+      items: section.items.map((item) =>
+        item.view === 'admin-pesan' && unreadCount > 0 ? { ...item, badge: unreadCount } : item
+      ),
+    }))
+  }, [isUserRole, unreadCount])
+
+  const pageTitle = (isUserRole ? VIEW_LABELS_USER : VIEW_LABELS_ADMIN)[currentView] || 'Dashboard'
 
   const initials = (authUser?.name || 'A')
     .split(' ')
@@ -254,13 +271,10 @@ export function AdminLayout({ children, onLogout, currentView, onNavigate }: Adm
     .join('')
     .toUpperCase()
 
-  // Use theme resolved on client. The "useTheme" hook returns undefined theme on SSR.
-  // We rely on next-themes' state. When undefined, we show Moon icon by default (light theme on first render).
   const isDark = theme === 'dark'
 
   return (
     <div className="min-h-screen bg-background flex">
-      {/* Desktop Sidebar */}
       <aside
         className={cn(
           'hidden lg:flex flex-col bg-sidebar border-r border-sidebar-border transition-all duration-200 sticky top-0 h-screen z-30 relative',
@@ -274,20 +288,16 @@ export function AdminLayout({ children, onLogout, currentView, onNavigate }: Adm
           onNavigate={onNavigate}
           onGoPublic={() => goToPublic('beranda')}
         />
+
         <button
           onClick={() => setCollapsed(!collapsed)}
           className="absolute -right-3 top-20 w-6 h-6 rounded-full bg-background border border-border shadow-sm flex items-center justify-center hover:bg-accent transition-colors z-40"
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          {collapsed ? (
-            <ChevronRight className="w-3 h-3" />
-          ) : (
-            <ChevronLeft className="w-3 h-3" />
-          )}
+          {collapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
         </button>
       </aside>
 
-      {/* Mobile Sidebar (Sheet) */}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetContent side="left" className="w-72 p-0 border-r-0">
           <SheetTitle className="sr-only">Menu Navigasi</SheetTitle>
@@ -304,9 +314,7 @@ export function AdminLayout({ children, onLogout, currentView, onNavigate }: Adm
         </SheetContent>
       </Sheet>
 
-      {/* Main */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Header */}
         <header className="sticky top-0 z-20 h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 flex items-center px-4 gap-3">
           <Button
             variant="ghost"
@@ -325,7 +333,6 @@ export function AdminLayout({ children, onLogout, currentView, onNavigate }: Adm
             </p>
           </div>
 
-          {/* Search */}
           <div className="hidden md:flex relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
@@ -335,7 +342,6 @@ export function AdminLayout({ children, onLogout, currentView, onNavigate }: Adm
             />
           </div>
 
-          {/* Theme toggle */}
           <Button
             variant="ghost"
             size="icon"
@@ -345,7 +351,6 @@ export function AdminLayout({ children, onLogout, currentView, onNavigate }: Adm
             {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </Button>
 
-          {/* User menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-10 px-2 sm:px-3 gap-2">
@@ -363,29 +368,38 @@ export function AdminLayout({ children, onLogout, currentView, onNavigate }: Adm
                 </div>
               </Button>
             </DropdownMenuTrigger>
+
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>
                 <div className="flex flex-col">
                   <span>{authUser?.name}</span>
-                  <span className="text-xs font-normal text-muted-foreground">
-                    @{authUser?.username}
-                  </span>
+                  <span className="text-xs font-normal text-muted-foreground">@{authUser?.username}</span>
                 </div>
               </DropdownMenuLabel>
+
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => onNavigate('admin-user')}>
-                <UserCircle className="w-4 h-4 mr-2" />
-                Profil Pengguna
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onNavigate('admin-setting')}>
-                <Settings className="w-4 h-4 mr-2" />
-                Pengaturan
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => goToPublic('beranda')}>
-                <ExternalLink className="w-4 h-4 mr-2" />
-                Lihat Situs
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
+              {/* jika user != "USER", maka tampilkan */}
+              {authUser?.role !== 'USER' && (
+                <>
+
+                  <DropdownMenuItem onClick={() => onNavigate('admin-user')}>
+                    <UserCircle className="w-4 h-4 mr-2" />
+                    Profil Pengguna
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onNavigate('admin-setting')}>
+                    <Settings className="w-4 h-4 mr-2" />
+                    Pengaturan
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem onClick={() => goToPublic('beranda')}>
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    Lihat Situs
+                  </DropdownMenuItem>
+
+                  <DropdownMenuSeparator />
+                </>
+              )}
+
               <DropdownMenuItem
                 onClick={onLogout}
                 className="text-destructive focus:text-destructive"
@@ -397,11 +411,9 @@ export function AdminLayout({ children, onLogout, currentView, onNavigate }: Adm
           </DropdownMenu>
         </header>
 
-        {/* Content */}
-        <main className="flex-1 p-4 md:p-6 lg:p-8 max-w-full overflow-x-hidden">
-          {children}
-        </main>
+        <main className="flex-1 p-4 md:p-6 lg:p-8 max-w-full overflow-x-hidden">{children}</main>
       </div>
     </div>
   )
 }
+

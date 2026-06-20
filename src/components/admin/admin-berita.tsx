@@ -84,6 +84,8 @@ export function AdminBerita() {
   const [editing, setEditing] = useState<Berita | null>(null)
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null)
+
 
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
@@ -116,8 +118,10 @@ export function AdminBerita() {
   const openAdd = () => {
     setEditing(null)
     setForm(emptyForm)
+    setThumbnailFile(null)
     setDialogOpen(true)
   }
+
 
   const openEdit = (item: Berita) => {
     setEditing(item)
@@ -135,8 +139,10 @@ export function AdminBerita() {
       metaDescription: item.metaDescription || '',
       metaKeywords: item.metaKeywords || '',
     })
+    setThumbnailFile(null)
     setDialogOpen(true)
   }
+
 
   const handleSave = async () => {
     if (!form.judul.trim()) {
@@ -150,6 +156,22 @@ export function AdminBerita() {
     setSaving(true)
     try {
       const payload = { ...form }
+
+      if (thumbnailFile) {
+        const fd = new FormData()
+        fd.append('file', thumbnailFile)
+        fd.append('category', 'berita')
+        const uploadRes = await fetch('/api/upload/thumbnail', {
+          method: 'POST',
+          body: fd,
+        })
+        const uploadJson = (await uploadRes.json()) as { url?: string; error?: string }
+        if (!uploadRes.ok || !uploadJson.url) {
+          throw new Error(uploadJson.error || 'Gagal upload thumbnail')
+        }
+        payload.thumbnail = uploadJson.url
+      }
+
       if (editing) {
         await apiPut(`/api/berita/${editing.id}`, payload)
         toast.success('Berita berhasil diperbarui')
@@ -165,6 +187,7 @@ export function AdminBerita() {
       setSaving(false)
     }
   }
+
 
   const handleDelete = async () => {
     if (!deleteId) return
@@ -362,13 +385,21 @@ export function AdminBerita() {
                 </div>
               </div>
               <div>
-                <Label>URL Thumbnail</Label>
+                <Label>Thumbnail</Label>
                 <Input
-                  value={form.thumbnail}
-                  onChange={(e) => setForm({ ...form, thumbnail: e.target.value })}
-                  placeholder="https://..."
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0]
+                    if (f) setThumbnailFile(f)
+                    else setThumbnailFile(null)
+                  }}
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Jika kosong, thumbnail tidak berubah.
+                </p>
               </div>
+
               <div>
                 <Label>Ringkasan</Label>
                 <Textarea

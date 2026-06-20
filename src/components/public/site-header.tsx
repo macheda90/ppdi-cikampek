@@ -1,17 +1,17 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
+import Image from 'next/image'
+
 import { useAppStore, type PublicView } from '@/lib/store'
 import { useSettings } from '@/hooks/use-settings'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogInput } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { Menu, Search, LogIn, ChevronDown, X } from 'lucide-react'
+import { Menu, Search, LogIn } from 'lucide-react'
 import { apiGet } from '@/lib/api-client'
-import { format } from 'date-fns'
-import { id as localeId } from 'date-fns/locale'
+
 
 interface MenuItem {
   label: string
@@ -120,8 +120,15 @@ export function SiteHeader({
               onClick={() => onNavigate('beranda')}
               className="flex items-center gap-3 shrink-0"
             >
-              <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full gradient-navy flex items-center justify-center text-primary-foreground font-bold text-lg shrink-0 shadow-navy">
-                {orgName.charAt(0)}
+              <div className="w-10 h-10 lg:w-12 lg:h-12 shrink-0 flex items-center justify-center">
+                <Image
+                  src="/logo.svg"
+                  alt="Logo PPDI Cikampek"
+                  width={48}
+                  height={48}
+                  className="w-full h-full"
+                  priority
+                />
               </div>
               <div className="text-left hidden sm:block">
                 <div className="font-bold text-sm lg:text-base text-primary leading-tight">{orgName}</div>
@@ -135,11 +142,10 @@ export function SiteHeader({
                 <button
                   key={item.view}
                   onClick={() => onNavigate(item.view)}
-                  className={`px-3 py-2 text-sm font-medium rounded-md transition-colors hover:bg-accent hover:text-accent-foreground ${
-                    currentView === item.view || currentView === `${item.view}-detail`
-                      ? 'text-primary bg-accent'
-                      : 'text-foreground'
-                  }`}
+                  className={`px-3 py-2 text-sm font-medium rounded-md transition-colors hover:bg-accent hover:text-accent-foreground ${currentView === item.view || currentView === `${item.view}-detail`
+                    ? 'text-primary bg-accent'
+                    : 'text-foreground'
+                    }`}
                 >
                   {item.label}
                 </button>
@@ -180,9 +186,8 @@ export function SiteHeader({
                       <button
                         key={item.view}
                         onClick={() => onNavigate(item.view)}
-                        className={`px-4 py-3 text-left text-sm font-medium rounded-md transition-colors hover:bg-accent ${
-                          currentView === item.view ? 'bg-accent text-primary' : ''
-                        }`}
+                        className={`px-4 py-3 text-left text-sm font-medium rounded-md transition-colors hover:bg-accent ${currentView === item.view ? 'bg-accent text-primary' : ''
+                          }`}
                       >
                         {item.label}
                       </button>

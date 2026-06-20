@@ -30,8 +30,12 @@ export function SiteFooter({
           {/* About */}
           <div className="lg:col-span-1">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full gradient-gold flex items-center justify-center text-gold-foreground font-bold">
-                {orgShort.charAt(0)}
+              <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center">
+                <img
+                  src="/logo.svg"
+                  alt="Logo PPDI Cikampek"
+                  className="w-9 h-9 object-contain"
+                />
               </div>
               <div>
                 <div className="font-bold text-sm">{orgShort}</div>
@@ -100,7 +104,7 @@ export function SiteFooter({
               )}
             </div>
             <p className="text-xs text-primary-foreground/60 mt-4 leading-relaxed">
-              {settings.org_description?.substring(0, 100)}
+              {settings.org_description}
             </p>
           </div>
         </div>

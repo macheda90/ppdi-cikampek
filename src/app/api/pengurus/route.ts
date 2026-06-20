@@ -65,9 +65,44 @@ export async function POST(req: NextRequest) {
       userId = newUser.id
     }
 
+    // Generate NIPD (unique) automatically for new pengurus
+    // Format: 321513<no_urut_3_digit> (e.g. 321513001)
+    const prefix = '321513'
+    const toCandidate = (n: number) => `${prefix}${String(n).padStart(3, '0')}`
+
+    // Find current max by parsing existing NIPD that matches the prefix.
+    // Note: no DB-level unique constraint, so we enforce uniqueness via retry.
+    const existingNipds = await db.pengurus.findMany({
+      where: {
+        nipd: { startsWith: prefix },
+      },
+      select: { nipd: true },
+      orderBy: { createdAt: 'asc' },
+      take: 10000,
+    })
+
+    let maxUrut = 0
+    for (const row of existingNipds) {
+      if (!row.nipd) continue
+      const suffix = row.nipd.slice(prefix.length)
+      const parsed = Number(suffix)
+      if (Number.isFinite(parsed) && parsed > maxUrut) maxUrut = parsed
+    }
+
+    let nipd: string | null = null
+    for (let attempt = 0; attempt < 50 && !nipd; attempt++) {
+      const candidate = toCandidate(maxUrut + 1 + attempt)
+      const exists = await db.pengurus.findFirst({ where: { nipd: candidate }, select: { id: true } })
+      if (!exists) nipd = candidate
+    }
+
+    if (!nipd) {
+      return NextResponse.json({ error: 'Gagal generate NIPD unik' }, { status: 500 })
+    }
+
     const pengurus = await db.pengurus.create({
       data: {
-        nipd: body.nipd || null,
+        nipd,
         namaLengkap: body.namaLengkap,
         nik: body.nik || null,
         tempatLahir: body.tempatLahir || null,
@@ -88,6 +123,7 @@ export async function POST(req: NextRequest) {
         jabatan: { select: { id: true, namaJabatan: true, urutan: true } },
       },
     })
+
 
     await db.auditLog.create({
       data: {

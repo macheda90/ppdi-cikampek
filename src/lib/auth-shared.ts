@@ -6,6 +6,7 @@ const ROLES = {
   ADMIN: 'ADMIN',
   EDITOR: 'EDITOR',
   PENGURUS: 'PENGURUS',
+  USER: 'USER',
 } as const
 
 export const ROLE_LABELS: Record<string, string> = {
@@ -13,6 +14,7 @@ export const ROLE_LABELS: Record<string, string> = {
   ADMIN: 'Admin',
   EDITOR: 'Editor',
   PENGURUS: 'Pengurus',
+  USER: 'User',
 }
 
 const ROLE_COLORS: Record<string, string> = {
@@ -20,6 +22,7 @@ const ROLE_COLORS: Record<string, string> = {
   ADMIN: 'bg-primary/10 text-primary border-primary/20',
   EDITOR: 'bg-blue-100 text-blue-700 border-blue-200',
   PENGURUS: 'bg-muted text-muted-foreground border-border',
+  USER: 'bg-green-100 text-green-700 border-green-200',
 }
 
 function hasPermission(role: string, allowedRoles: string[]): boolean {

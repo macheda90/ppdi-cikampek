@@ -21,7 +21,7 @@ async function main() {
     { key: 'hero_subtitle', value: 'Kecamatan Cikampek', category: 'HOMEPAGE' },
     { key: 'hero_description', value: 'Menguatkan Sinergi Perangkat Desa Menuju Pelayanan Publik yang Profesional dan Berintegritas', category: 'HOMEPAGE' },
     { key: 'hero_image', value: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=1920&q=80', category: 'HOMEPAGE' },
-    { key: 'ketua_nama', value: 'Ahmad Fauzi, S.IP', category: 'HOMEPAGE' },
+    { key: 'ketua_nama', value: 'Rusmiati', category: 'HOMEPAGE' },
     { key: 'ketua_foto', value: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&q=80', category: 'HOMEPAGE' },
     { key: 'ketua_sambutan', value: 'Assalamualaikum Warahmatullahi Wabarakatuh. Selamat datang di portal resmi Persatuan Perangkat Desa Indonesia (PPDI) Kecamatan Cikampek. Portal ini hadir sebagai wujud komitmen kami untuk transparansi, akuntabilitas, dan peningkatan kualitas pelayanan publik di tingkat desa. Mari bersama-sama kita membangun desa yang maju, mandiri, dan berintegritas demi kesejahteraan masyarakat Cikampek.', category: 'HOMEPAGE' },
     { key: 'profil_sejarah', value: '<h2>Sejarah PPDI Kecamatan Cikampek</h2><p>Persatuan Perangkat Desa Indonesia (PPDI) Kecamatan Cikampek didirikan sebagai wadah organisasi bagi seluruh perangkat desa di wilayah Kecamatan Cikampek, Kabupaten Karawang, Jawa Barat. Berdiri sejak tahun 2015, PPDI Kecamatan Cikampek lahir dari kebutuhan akan peningkatan kapasitas, profesionalisme, dan sinergi antar perangkat desa dalam menjalankan tugas pemerintahan dan pelayanan publik.</p><p>Seiring berjalannya waktu, PPDI Kecamatan Cikampek berkembang menjadi organisasi yang aktif dalam berbagai kegiatan pelatihan, advokasi, dan penguatan kapasitas perangkat desa. Organisasi ini berperan penting dalam menjembatani komunikasi antara pemerintah desa dengan pemerintah kecamatan dan kabupaten.</p>', category: 'PROFIL' },
@@ -56,18 +56,16 @@ async function main() {
 
   // ==================== DESA ====================
   const desaList = [
-    { namaDesa: 'Cikampek Kota', kepalaDesa: 'H. Endang Suryadi', alamat: 'Jl. Raya Cikampek Kota' },
-    { namaDesa: 'Cikampek Selatan', kepalaDesa: 'Asep Ruhiat', alamat: 'Jl. Cikampek Selatan No. 12' },
-    { namaDesa: 'Cikampek Timur', kepalaDesa: 'Ahmad Fauzi, S.IP', alamat: 'Jl. Raya Timur Cikampek' },
-    { namaDesa: 'Dawuan Barat', kepalaDesa: 'Rudi Hartono', alamat: 'Jl. Dawuan Barat' },
-    { namaDesa: 'Dawuan Tengah', kepalaDesa: 'Yusuf Maulana', alamat: 'Jl. Dawuan Tengah' },
-    { namaDesa: 'Dawuan Wetan', kepalaDesa: 'Toto Hermawan', alamat: 'Jl. Dawuan Wetan' },
-    { namaDesa: 'Kamojing', kepalaDesa: 'Yayan Suryana', alamat: 'Jl. Kamojing' },
-    { namaDesa: 'Kalihurip', kepalaDesa: 'Ade Sumarna', alamat: 'Jl. Kalihurip' },
-    { namaDesa: 'Kutawargi', kepalaDesa: 'Nana Sutisna', alamat: 'Jl. Kutawargi' },
-    { namaDesa: 'Lubangbuaya', kepalaDesa: 'Erik Setiawan', alamat: 'Jl. Lubangbuaya' },
-    { namaDesa: 'Tamanmekar', kepalaDesa: 'Dadang Suhendar', alamat: 'Jl. Tamanmekar' },
-    { namaDesa: 'Tegalsari', kepalaDesa: 'Wawan Setiawan', alamat: 'Jl. Tegalsari' },
+    { namaDesa: 'Cikampek Kota', kepalaDesa: 'Ahmad Nurdin', alamat: 'Jl. Raya Cikampek Kota' },
+    { namaDesa: 'Cikampek Selatan', kepalaDesa: 'Edi Suparjono', alamat: 'Jl. Cikampek Selatan No. 12' },
+    { namaDesa: 'Cikampek Timur', kepalaDesa: 'Kriswanto, A.Md.', alamat: 'Jl. Raya Timur Cikampek' },
+    { namaDesa: 'Dawuan Barat', kepalaDesa: 'Ari Maulana, S.K.M., M.M.', alamat: 'Jl. Dawuan Barat' },
+    { namaDesa: 'Dawuan Tengah', kepalaDesa: 'Jejen Jaenal Arifin, S.T.', alamat: 'Jl. Dawuan Tengah' },
+    { namaDesa: 'Dawuan Timur', kepalaDesa: 'Tatang Somantri', alamat: 'Jl. Dawuan Timur' },
+    { namaDesa: 'Kamojing', kepalaDesa: 'Chahyadi', alamat: 'Jl. Kamojing' },
+    { namaDesa: 'Kalihurip', kepalaDesa: 'Herman', alamat: 'Jl. Kalihurip' },
+    { namaDesa: 'Cikampek Pusaka', kepalaDesa: 'Pendi Supendi', alamat: 'Jl. Kutawargi' },
+    { namaDesa: 'Cikampek Barat', kepalaDesa: 'Yuyun Yuningsih, A.Md.', alamat: 'Jl. Lubangbuaya' },
   ]
 
   const desaRecords = []
@@ -88,7 +86,9 @@ async function main() {
     { namaJabatan: 'Ketua Bidang SDM', urutan: 7, kategori: 'BIDANG' },
     { namaJabatan: 'Ketua Bidang Pemberdayaan', urutan: 8, kategori: 'BIDANG' },
     { namaJabatan: 'Ketua Bidang Humas', urutan: 9, kategori: 'BIDANG' },
-    { namaJabatan: 'Anggota', urutan: 10, kategori: 'ANGGOTA' },
+    { namaJabatan: 'Penasihat', urutan: 10, kategori: 'PIMPINAN' },
+    { namaJabatan: 'Pembina', urutan: 11, kategori: 'PIMPINAN' },
+    { namaJabatan: 'Anggota', urutan: 12, kategori: 'ANGGOTA' },
   ]
 
   const jabatanRecords = []
@@ -103,25 +103,25 @@ async function main() {
 
   const pengurusData = [
     {
-      namaLengkap: 'Ahmad Fauzi, S.IP',
-      nipd: 'PPDI-001-2015',
+      namaLengkap: 'Rusmiati',
+      nipd: '321513001',
       nik: '3201150101800001',
       tempatLahir: 'Karawang',
       tanggalLahir: new Date('1980-01-01'),
-      jenisKelamin: 'L',
+      jenisKelamin: 'P',
       foto: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&q=80',
-      desaIndex: 2, // Cikampek Timur
+      desaIndex: 8, // Cikampek Timur
       jabatanIndex: 0, // Ketua
       masaJabatan: '2024-2029',
       noHp: '081234567801',
-      email: 'ahmad.fauzi@ppdi-cikampek.id',
-      alamat: 'Jl. Raya Timur Cikampek No. 45',
-      role: 'SUPER_ADMIN',
-      username: 'admin',
+      email: 'rusmiati@ppdi.cikampek.id',
+      alamat: 'Jl. Raya Kalihurip No. 45',
+      role: 'PENGURUS',
+      username: 'rusmiati',
     },
     {
       namaLengkap: 'Rudi Hartono',
-      nipd: 'PPDI-002-2015',
+      nipd: '321513002',
       nik: '3201150202810002',
       tempatLahir: 'Karawang',
       tanggalLahir: new Date('1981-02-02'),
@@ -138,7 +138,7 @@ async function main() {
     },
     {
       namaLengkap: 'Dedi Mulyadi',
-      nipd: 'PPDI-003-2015',
+      nipd: '321513003',
       nik: '3201150303820003',
       tempatLahir: 'Bandung',
       tanggalLahir: new Date('1982-03-03'),
@@ -155,7 +155,7 @@ async function main() {
     },
     {
       namaLengkap: 'Yayan Suryana',
-      nipd: 'PPDI-004-2015',
+      nipd: '321513004',
       nik: '3201150404830004',
       tempatLahir: 'Karawang',
       tanggalLahir: new Date('1983-04-04'),
@@ -172,7 +172,7 @@ async function main() {
     },
     {
       namaLengkap: 'H. Endang Suryadi',
-      nipd: 'PPDI-005-2016',
+      nipd: '321513005',
       nik: '3201150505840005',
       tempatLahir: 'Karawang',
       tanggalLahir: new Date('1984-05-05'),
@@ -189,7 +189,7 @@ async function main() {
     },
     {
       namaLengkap: 'Asep Ruhiat',
-      nipd: 'PPDI-006-2016',
+      nipd: '321513006',
       nik: '3201150606850006',
       tempatLahir: 'Bandung',
       tanggalLahir: new Date('1985-06-06'),
@@ -206,7 +206,7 @@ async function main() {
     },
     {
       namaLengkap: 'Siti Aminah, S.E',
-      nipd: 'PPDI-007-2017',
+      nipd: '321513007',
       nik: '3201150707860007',
       tempatLahir: 'Cirebon',
       tanggalLahir: new Date('1986-07-07'),
@@ -222,8 +222,8 @@ async function main() {
       username: 'siti',
     },
     {
-      namaLengkap: 'Bambang Wijaya',
-      nipd: 'PPDI-008-2017',
+      namaLengkap: 'Bambang Prayitno',
+      nipd: '321513008',
       nik: '3201150808870008',
       tempatLahir: 'Karawang',
       tanggalLahir: new Date('1987-08-08'),
@@ -233,27 +233,27 @@ async function main() {
       jabatanIndex: 7, // Ketua Bidang Pemberdayaan
       masaJabatan: '2024-2029',
       noHp: '081234567808',
-      email: 'bambang.wijaya@ppdi-cikampek.id',
+      email: 'bambang.prayitno@ppdi.cikampek.id',
       alamat: 'Jl. Kutawargi No. 12',
-      role: 'PENGURUS',
+      role: 'ADMIN',
       username: 'bambang',
     },
     {
-      namaLengkap: 'Nurhasanah, S.Sos',
-      nipd: 'PPDI-009-2018',
+      namaLengkap: 'Ivan Sofyan',
+      nipd: '321513009',
       nik: '3201150909880009',
-      tempatLahir: 'Subang',
+      tempatLahir: 'Karawang',
       tanggalLahir: new Date('1988-09-09'),
-      jenisKelamin: 'P',
+      jenisKelamin: 'L',
       foto: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=400&q=80',
       desaIndex: 10, // Tamanmekar
       jabatanIndex: 8, // Ketua Bidang Humas
       masaJabatan: '2024-2029',
       noHp: '081234567809',
-      email: 'nurhasanah@ppdi-cikampek.id',
+      email: 'ivan.sofyan@ppdi.cikampek.id',
       alamat: 'Jl. Tamanmekar No. 15',
-      role: 'PENGURUS',
-      username: 'nur',
+      role: 'SUPER_ADMIN',
+      username: 'admin',
     },
     {
       namaLengkap: 'Tono Sugianto',
@@ -269,7 +269,7 @@ async function main() {
       noHp: '081234567810',
       email: 'tono.sugianto@ppdi-cikampek.id',
       alamat: 'Jl. Lubangbuaya No. 20',
-      role: 'PENGURUS',
+      role: 'USER',
       username: 'tono',
     },
   ]

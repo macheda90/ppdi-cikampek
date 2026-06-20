@@ -49,6 +49,7 @@ const emptyForm = {
   videoUrl: '',
 }
 
+
 function parseFotos(raw: string | null): string[] {
   if (!raw) return []
   try {
@@ -70,6 +71,8 @@ export function AdminKegiatan() {
   const [editing, setEditing] = useState<Kegiatan | null>(null)
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
+  const [fotosFiles, setFotosFiles] = useState<File[]>([])
+
 
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
@@ -100,8 +103,10 @@ export function AdminKegiatan() {
   const openAdd = () => {
     setEditing(null)
     setForm(emptyForm)
+    setFotosFiles([])
     setDialogOpen(true)
   }
+
 
   const openEdit = (item: Kegiatan) => {
     setEditing(item)
@@ -114,8 +119,10 @@ export function AdminKegiatan() {
       fotos: parseFotos(item.fotos).join(', '),
       videoUrl: item.videoUrl || '',
     })
+    setFotosFiles([])
     setDialogOpen(true)
   }
+
 
   const handleSave = async () => {
     if (!form.namaKegiatan.trim()) {
@@ -128,10 +135,24 @@ export function AdminKegiatan() {
     }
     setSaving(true)
     try {
-      const fotosArray = form.fotos
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean)
+      let fotosArray: string[] = []
+
+      if (fotosFiles.length > 0) {
+        const fd = new FormData()
+        for (const f of fotosFiles) fd.append('files', f)
+        const uploadRes = await fetch('/api/upload/kegiatan-fotos', {
+          method: 'POST',
+          body: fd,
+        })
+        const uploadJson = (await uploadRes.json()) as { urls?: string[]; error?: string }
+        if (!uploadRes.ok || !uploadJson.urls) {
+          throw new Error(uploadJson.error || 'Gagal upload foto kegiatan')
+        }
+        fotosArray = uploadJson.urls
+      } else {
+        fotosArray = parseFotos(editing?.fotos ?? null)
+      }
+
       const payload = {
         namaKegiatan: form.namaKegiatan,
         tanggal: form.tanggal,
@@ -156,6 +177,7 @@ export function AdminKegiatan() {
       setSaving(false)
     }
   }
+
 
   const handleDelete = async () => {
     if (!deleteId) return
@@ -324,17 +346,21 @@ export function AdminKegiatan() {
               />
             </div>
             <div>
-              <Label>URL Foto (pisahkan dengan koma)</Label>
-              <Textarea
-                value={form.fotos}
-                onChange={(e) => setForm({ ...form, fotos: e.target.value })}
-                rows={3}
-                placeholder="https://foto1.jpg, https://foto2.jpg"
+              <Label>Foto (pilih beberapa)</Label>
+              <Input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={(e) => {
+                  const files = e.target.files ? Array.from(e.target.files) : []
+                  setFotosFiles(files)
+                }}
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Masukkan beberapa URL foto dipisahkan dengan tanda koma.
+                Jika kosong, foto lama tetap digunakan.
               </p>
             </div>
+
             <div>
               <Label>URL Video (opsional)</Label>
               <Input

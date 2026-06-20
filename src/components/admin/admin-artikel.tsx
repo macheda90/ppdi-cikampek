@@ -58,10 +58,8 @@ const emptyForm = {
   isi: '',
   penulis: '',
   tags: '',
-  seoTitle: '',
-  metaDescription: '',
-  metaKeywords: '',
 }
+
 
 export function AdminArtikel() {
   const [items, setItems] = useState<Artikel[]>([])
@@ -73,6 +71,8 @@ export function AdminArtikel() {
   const [editing, setEditing] = useState<Artikel | null>(null)
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null)
+
 
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
@@ -105,8 +105,10 @@ export function AdminArtikel() {
   const openAdd = () => {
     setEditing(null)
     setForm(emptyForm)
+    setThumbnailFile(null)
     setDialogOpen(true)
   }
+
 
   const openEdit = (item: Artikel) => {
     setEditing(item)
@@ -118,12 +120,13 @@ export function AdminArtikel() {
       isi: item.isi,
       penulis: item.penulis || '',
       tags: item.tags || '',
-      seoTitle: item.seoTitle || '',
-      metaDescription: item.metaDescription || '',
-      metaKeywords: item.metaKeywords || '',
     })
+
+    setThumbnailFile(null)
     setDialogOpen(true)
   }
+
+
 
   const handleSave = async () => {
     if (!form.judul.trim()) {
@@ -137,6 +140,22 @@ export function AdminArtikel() {
     setSaving(true)
     try {
       const payload = { ...form }
+
+      if (thumbnailFile) {
+        const fd = new FormData()
+        fd.append('file', thumbnailFile)
+        fd.append('category', 'artikel')
+        const uploadRes = await fetch('/api/upload/thumbnail', {
+          method: 'POST',
+          body: fd,
+        })
+        const uploadJson = (await uploadRes.json()) as { url?: string; error?: string }
+        if (!uploadRes.ok || !uploadJson.url) {
+          throw new Error(uploadJson.error || 'Gagal upload thumbnail')
+        }
+        payload.thumbnail = uploadJson.url
+      }
+
       if (editing) {
         await apiPut(`/api/artikel/${editing.id}`, payload)
         toast.success('Artikel berhasil diperbarui')
@@ -152,6 +171,7 @@ export function AdminArtikel() {
       setSaving(false)
     }
   }
+
 
   const handleDelete = async () => {
     if (!deleteId) return
@@ -283,10 +303,10 @@ export function AdminArtikel() {
             </DialogDescription>
           </DialogHeader>
           <Tabs defaultValue="konten" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-1">
               <TabsTrigger value="konten">Konten</TabsTrigger>
-              <TabsTrigger value="seo">SEO</TabsTrigger>
             </TabsList>
+
             <TabsContent value="konten" className="space-y-4 mt-2">
               <div>
                 <Label>Judul *</Label>
@@ -322,12 +342,21 @@ export function AdminArtikel() {
                 </div>
               </div>
               <div>
-                <Label>URL Thumbnail</Label>
+                <Label>Thumbnail</Label>
                 <Input
-                  value={form.thumbnail}
-                  onChange={(e) => setForm({ ...form, thumbnail: e.target.value })}
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0]
+                    if (f) setThumbnailFile(f)
+                    else setThumbnailFile(null)
+                  }}
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Jika kosong, thumbnail tidak berubah.
+                </p>
               </div>
+
               <div>
                 <Label>Ringkasan</Label>
                 <Textarea
@@ -354,30 +383,8 @@ export function AdminArtikel() {
                 />
               </div>
             </TabsContent>
-            <TabsContent value="seo" className="space-y-4 mt-2">
-              <div>
-                <Label>SEO Title</Label>
-                <Input
-                  value={form.seoTitle}
-                  onChange={(e) => setForm({ ...form, seoTitle: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label>Meta Description</Label>
-                <Textarea
-                  value={form.metaDescription}
-                  onChange={(e) => setForm({ ...form, metaDescription: e.target.value })}
-                  rows={3}
-                />
-              </div>
-              <div>
-                <Label>Meta Keywords</Label>
-                <Input
-                  value={form.metaKeywords}
-                  onChange={(e) => setForm({ ...form, metaKeywords: e.target.value })}
-                />
-              </div>
-            </TabsContent>
+
+
           </Tabs>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Batal</Button>

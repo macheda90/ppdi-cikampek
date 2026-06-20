@@ -1,11 +1,11 @@
 // ============================================
-// PRISMA SCHEMA - MySQL VERSION (untuk shared hosting / VPS)
+// PRISMA SCHEMA - PostgreSQL VERSION
 // ============================================
-// Gunakan schema ini jika deploy ke hosting dengan MySQL
+// Gunakan schema ini jika deploy ke PostgreSQL
 // Cara pakai:
 //   1. Backup file schema.prisma lama
 //   2. Copy file ini ke prisma/schema.prisma
-//   3. Set DATABASE_URL di .env: mysql://user:pass@host:3306/dbname
+//   3. Set DATABASE_URL di .env: postgresql://user:pass@host:5432/dbname
 //   4. Jalankan: bun run db:push
 // ============================================
 
@@ -15,7 +15,7 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -120,7 +120,7 @@ model Berita {
   kategori        String    @default("Umum")
   thumbnail       String?   @db.Text
   ringkasan       String?   @db.Text
-  isi             String    @db.LongText
+  isi             String    @db.Text   // <-- FIXED: was @db.LongText
   penulis         String?
   status          String    @default("DRAFT")
   tags            String?
@@ -144,7 +144,7 @@ model Artikel {
   kategori        String    @default("Umum")
   thumbnail       String?   @db.Text
   ringkasan       String?   @db.Text
-  isi             String    @db.LongText
+  isi             String    @db.Text   // <-- FIXED: was @db.LongText
   penulis         String?
   tags            String?
   seoTitle        String?
@@ -220,7 +220,7 @@ model Download {
 model Setting {
   id        String   @id @default(cuid())
   key       String   @unique
-  value     String?  @db.LongText
+  value     String?  @db.Text   // <-- FIXED: was @db.LongText
   category  String   @default("GENERAL")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

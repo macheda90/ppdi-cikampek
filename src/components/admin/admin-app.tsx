@@ -4,8 +4,12 @@ import { useAppStore } from '@/lib/store'
 import { AdminLogin } from './admin-login'
 import { AdminLayout } from './admin-layout'
 import { AdminDashboard } from './admin-dashboard'
+import { AdminDashboardUser } from './admin-dashboard-user'
+
 import { AdminPengurus } from './admin-pengurus'
+
 import { AdminDesa } from './admin-desa'
+
 import { AdminJabatan } from './admin-jabatan'
 import { AdminBerita } from './admin-berita'
 import { AdminArtikel } from './admin-artikel'
@@ -30,7 +34,11 @@ export function AdminApp({ onLogout }: AdminAppProps) {
       <AdminLogin
         onLogin={(user) => {
           setAuthUser(user)
-          goAdmin('admin-dashboard')
+          if (user.role === 'USER') {
+            goAdmin('user-dashboard')
+          } else {
+            goAdmin('admin-dashboard')
+          }
         }}
       />
     )
@@ -67,7 +75,8 @@ export function AdminApp({ onLogout }: AdminAppProps) {
       case 'admin-audit':
         return <AdminAudit />
       default:
-        return <AdminDashboard />
+        return authUser.role === 'USER' ? <AdminDashboardUser /> : <AdminDashboard />
+
     }
   }
 

@@ -6,6 +6,7 @@ import { useAppStore } from '@/lib/store'
 import type { User } from '@/lib/types'
 import { ROLE_LABELS } from '@/lib/auth-shared'
 import { formatDateTime } from '@/lib/types'
+
 import { AdminPageHeader, SearchInput, AdminLoading, AdminEmpty } from './_shared'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -80,8 +81,10 @@ export function AdminUser() {
   const [editing, setEditing] = useState<UserWithPengurus | null>(null)
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
+  const [avatarFile, setAvatarFile] = useState<File | null>(null)
 
   const [deleteId, setDeleteId] = useState<string | null>(null)
+
   const [deleting, setDeleting] = useState(false)
 
   const canDelete =
@@ -125,8 +128,10 @@ export function AdminUser() {
       isActive: item.isActive,
       password: '',
     })
+    setAvatarFile(null)
     setDialogOpen(true)
   }
+
 
   const handleSave = async () => {
     if (!editing) return
@@ -145,6 +150,21 @@ export function AdminUser() {
       if (form.password) {
         payload.password = form.password
       }
+
+      if (avatarFile) {
+        const fd = new FormData()
+        fd.append('file', avatarFile)
+        const uploadRes = await fetch('/api/upload/user-avatar', {
+          method: 'POST',
+          body: fd,
+        })
+        const uploadJson = (await uploadRes.json()) as { url?: string; error?: string }
+        if (!uploadRes.ok || !uploadJson.url) {
+          throw new Error(uploadJson.error || 'Gagal upload avatar')
+        }
+        payload.avatar = uploadJson.url
+      }
+
       await apiPut(`/api/users/${editing.id}`, payload)
       toast.success('User berhasil diperbarui')
       setDialogOpen(false)
@@ -155,6 +175,7 @@ export function AdminUser() {
       setSaving(false)
     }
   }
+
 
   const handleDelete = async () => {
     if (!deleteId) return
@@ -362,6 +383,23 @@ export function AdminUser() {
                 onCheckedChange={(c) => setForm({ ...form, isActive: c })}
               />
               <Label htmlFor="isActive" className="cursor-pointer">Akun Aktif</Label>
+            </div>
+            <div>
+              <Label>Avatar</Label>
+              <div className="space-y-2">
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0]
+                    if (f) setAvatarFile(f)
+                    else setAvatarFile(null)
+                  }}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Pilih file gambar. Jika kosong, avatar tidak berubah.
+                </p>
+              </div>
             </div>
             <div>
               <Label>Reset Password</Label>

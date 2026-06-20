@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Calendar, MapPin, Users, Building2, Newspaper, FileText, Image as ImageIcon, ArrowRight, Quote, Activity, ChevronLeft, ChevronRight } from 'lucide-react'
 import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
-import type { Berita, Artikel, Kegiatan, Agenda, Galeri } from '@/lib/types'
+import type { Berita, Artikel, Kegiatan, Agenda, Galeri, Pengurus } from '@/lib/types'
 
 export function Beranda() {
   const { settings } = useSettings()
@@ -22,6 +22,7 @@ export function Beranda() {
   const [kegiatan, setKegiatan] = useState<Kegiatan[]>([])
   const [agenda, setAgenda] = useState<Agenda[]>([])
   const [galeri, setGaleri] = useState<Galeri[]>([])
+  const [ketua, setKetua] = useState<Pengurus | null>(null)
   const [currentSlide, setCurrentSlide] = useState(0)
 
   useEffect(() => {
@@ -32,15 +33,22 @@ export function Beranda() {
       apiGet<{ kegiatan: Kegiatan[] }>('/api/kegiatan?limit=6'),
       apiGet<{ agenda: Agenda[] }>('/api/agenda?limit=5'),
       apiGet<{ galeri: Galeri[] }>('/api/galeri?limit=8'),
-    ]).then(([s, b, a, k, ag, g]) => {
+      apiGet<{ pengurus: Pengurus[] }>('/api/pengurus?jabatanId=all&admin=false'),
+    ]).then(([s, b, a, k, ag, g, p]) => {
       setStats(s)
       setBerita(b.berita)
       setArtikel(a.artikel)
       setKegiatan(k.kegiatan)
       setAgenda(ag.agenda)
       setGaleri(g.galeri)
+
+      // Ketua: ambil pengurus dengan jabatan urutan = 1
+      const sortedPengurus = [...p.pengurus].sort((x, y) => (x.jabatan?.urutan ?? 999) - (y.jabatan?.urutan ?? 999))
+      const ketuaUrutan1 = sortedPengurus.find((x) => x.jabatan?.urutan === 1) || null
+      setKetua(ketuaUrutan1)
     })
   }, [])
+
 
   // Hero slider
   const slides = [
@@ -171,10 +179,11 @@ export function Beranda() {
               <div className="relative">
                 <div className="aspect-[3/4] rounded-2xl overflow-hidden shadow-xl">
                   <img
-                    src={settings.ketua_foto || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&q=80'}
-                    alt={settings.ketua_nama || 'Ketua PPDI'}
+                    src={ketua?.foto || settings.ketua_foto || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&q=80'}
+                    alt={ketua?.namaLengkap || settings.ketua_nama || 'Ketua PPDI'}
                     className="w-full h-full object-cover"
                   />
+
                 </div>
                 <div className="absolute -bottom-4 -right-4 w-24 h-24 gradient-gold rounded-2xl flex items-center justify-center shadow-gold">
                   <Quote className="h-10 w-10 text-gold-foreground" />
@@ -184,8 +193,9 @@ export function Beranda() {
             <div className="md:col-span-2">
               <Badge className="mb-3 bg-gold text-gold-foreground hover:bg-gold">Sambutan Ketua</Badge>
               <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
-                {settings.ketua_nama || 'Ahmad Fauzi, S.IP'}
+                {ketua?.namaLengkap || settings.ketua_nama || 'Ahmad Fauzi, S.IP'}
               </h2>
+
               <p className="text-sm text-primary font-medium mb-4">Ketua PPDI Kecamatan Cikampek</p>
               <div className="prose-content text-muted-foreground text-sm md:text-base leading-relaxed">
                 <p>{settings.ketua_sambutan}</p>

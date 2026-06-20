@@ -205,16 +205,16 @@ export function AdminDashboard() {
         </p>
         <div className="flex flex-wrap gap-2 mt-4">
           <Badge className="bg-white/20 text-white border-0">
-            <Building2 className="w-3 h-3 mr-1" /> {stats.totalDesa} Desa
+            <Building2 className="w-3 h-3 mr-1" /> {stats?.totalDesa} Desa
           </Badge>
           <Badge className="bg-white/20 text-white border-0">
-            <ImageIcon className="w-3 h-3 mr-1" /> {stats.totalGaleri} Galeri
+            <ImageIcon className="w-3 h-3 mr-1" /> {stats?.totalGaleri} Galeri
           </Badge>
           <Badge className="bg-white/20 text-white border-0">
-            <Download className="w-3 h-3 mr-1" /> {stats.totalDownloads} File
+            <Download className="w-3 h-3 mr-1" /> {stats?.totalDownloads} File
           </Badge>
           <Badge className="bg-gold text-gold-foreground border-0">
-            <Mail className="w-3 h-3 mr-1" /> {stats.unreadPesan} Pesan Belum Dibaca
+            <Mail className="w-3 h-3 mr-1" /> {stats?.unreadPesan} Pesan Belum Dibaca
           </Badge>
         </div>
       </div>
