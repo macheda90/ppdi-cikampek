@@ -231,7 +231,15 @@ export function BeritaDetail() {
     if (typeof window === 'undefined') return ''
     // App menggunakan routing internal (Zustand). Pastikan URL yang dibagikan selalu mengarah ke detail berita.
     // Path detail di UI adalah: /berita-detail
-    return `${window.location.origin}/${berita?.slug ? `berita/${berita.slug}` : `berita/${slug}`}`
+    // UI internal route ada di Zustand sebagai `berita-detail`.
+    // Untuk link publik yang bisa diakses langsung via URL, gunakan base app route (/) + query.
+    // (Sistem deployment tidak memiliki route /berita/[slug] sehingga /berita/... akan 404.)
+    const searchParams = new URLSearchParams({
+      view: 'berita-detail',
+      slug: berita?.slug || slug,
+    })
+    return `${window.location.origin}/?${searchParams.toString()}`
+
   }
 
   const handleShare = async (platform: 'facebook' | 'twitter' | 'whatsapp' | 'copy') => {

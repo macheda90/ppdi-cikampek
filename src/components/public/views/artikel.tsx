@@ -230,8 +230,14 @@ export function ArtikelDetail() {
 
   const getShareUrl = () => {
     if (typeof window === 'undefined') return ''
-    // Path detail di UI: /artikel/<slug>
-    return `${window.location.origin}/${artikel?.slug ? `artikel/${artikel.slug}` : `artikel/${slug}`}`
+    // Deployment tidak menyediakan route /artikel/[slug] (yang ada adalah / dengan Zustand view).
+    // Buat link publik yang bisa diakses langsung.
+    const searchParams = new URLSearchParams({
+      view: 'artikel-detail',
+      slug: artikel?.slug || slug,
+    })
+    return `${window.location.origin}/?${searchParams.toString()}`
+
   }
 
   const handleShare = async (platform: 'facebook' | 'twitter' | 'whatsapp' | 'copy') => {
