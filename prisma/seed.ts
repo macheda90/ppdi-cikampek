@@ -257,7 +257,7 @@ async function main() {
     },
     {
       namaLengkap: 'Tono Sugianto',
-      nipd: 'PPDI-010-2018',
+      nipd: '321513010',
       nik: '3201151010890010',
       tempatLahir: 'Karawang',
       tanggalLahir: new Date('1989-10-10'),

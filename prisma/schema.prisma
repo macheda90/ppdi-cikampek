@@ -16,7 +16,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url      = env("PPDI_DATABASE_URL")
 }
 
 // ==================== AUTH & USERS ====================

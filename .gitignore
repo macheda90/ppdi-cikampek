@@ -63,3 +63,4 @@ tsconfig.tsbuildinfo
 /watchdog.sh
 /keep-alive.sh
 /dev.pid
+.env*
