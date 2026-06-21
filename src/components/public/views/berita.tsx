@@ -227,24 +227,40 @@ export function BeritaDetail() {
     return () => { cancelled = true }
   }, [slug])
 
-  const handleShare = async (platform: 'facebook' | 'twitter' | 'copy') => {
-    const url = typeof window !== 'undefined' ? window.location.href : ''
+  const getShareUrl = () => {
+    if (typeof window === 'undefined') return ''
+    // App menggunakan routing internal (Zustand). Pastikan URL yang dibagikan selalu mengarah ke detail berita.
+    // Path detail di UI adalah: /berita-detail
+    return `${window.location.origin}/${berita?.slug ? `berita/${berita.slug}` : `berita/${slug}`}`
+  }
+
+  const handleShare = async (platform: 'facebook' | 'twitter' | 'whatsapp' | 'copy') => {
+    const url = getShareUrl()
+    const text = berita?.judul || ''
+
     if (platform === 'copy') {
       try {
         await navigator.clipboard.writeText(url)
         setCopied(true)
         setTimeout(() => setCopied(false), 2000)
-      } catch {}
+      } catch { }
       return
     }
+
+    if (platform === 'whatsapp') {
+      const waUrl = `https://wa.me/?text=${encodeURIComponent(`${text} ${url}`.trim())}`
+      window.open(waUrl, '_blank', 'noopener,noreferrer')
+      return
+    }
+
     const shareUrl =
       platform === 'facebook'
         ? `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`
-        : `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(berita?.judul || '')}`
-    if (typeof window !== 'undefined') {
-      window.open(shareUrl, '_blank', 'noopener,noreferrer')
-    }
+        : `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`
+
+    window.open(shareUrl, '_blank', 'noopener,noreferrer')
   }
+
 
   if (loading) {
     return (
@@ -354,9 +370,13 @@ export function BeritaDetail() {
             <Button size="sm" variant="outline" onClick={() => handleShare('twitter')}>
               <Twitter className="h-4 w-4 mr-1.5" /> Twitter
             </Button>
+            <Button size="sm" variant="outline" onClick={() => handleShare('whatsapp')}>
+              <span className="text-lg leading-none">🟢</span> Whatsapp
+            </Button>
             <Button size="sm" variant="outline" onClick={() => handleShare('copy')}>
               <Link2 className="h-4 w-4 mr-1.5" /> {copied ? 'Tersalin!' : 'Salin Tautan'}
             </Button>
+
           </div>
         </div>
       </section>

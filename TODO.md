@@ -1,22 +1,32 @@
-# TODO - Perubahan Sambutan Ketua (Beranda)
+# TODO - Back office Galeri changes
 
-## Rencana
-1. Analisis komponen `src/components/public/views/beranda.tsx` untuk bagian “Sambutan Ketua” yang masih hardcode.
-2. Ambil data “Ketua” dari tabel `pengurus` yang diurutkan berdasarkan `jabatan.urutan`.
-   - Kriteria: jabatan dengan `urutan = 1`.
-3. Ubah komponen beranda agar:
-   - Nama ketua diambil dari `pengurus.namaLengkap` (jabatan urutan 1).
-   - Foto ketua diambil dari `pengurus.foto` (fallback jika null).
-   - Konten sambutan tetap bisa memakai `settings.ketua_sambutan` (jika belum diminta berubah), atau ambil dari sumber lain jika sudah ada.
-4. Validasi tipe data dengan `src/lib/types.ts` (tipe `Pengurus`).
-5. Jalankan build/lint/check kompilasi agar tidak ada error TypeScript.
+## Completed
+- [x] Identify UI location for Galeri admin.
+- [x] Read current `AdminGaleri` implementation.
+- [x] Verify backend `/api/galeri` supports bulk create (items array).
+- [x] Confirm interpretation for “max 10 file”: bulk create up to 10 items.
+- [x] Approval received to rewrite `src/components/admin/admin-galeri.tsx`.
 
-## Steps setelah eksekusi
-- [ ] (1) Konfirmasi lokasi hardcode dan tambahkan state untuk ketua.
-- [ ] (2) Tambahkan fetch endpoint yang sesuai (atau tambah endpoint baru jika perlu).
-- [ ] (3) Render ulang section “Sambutan Ketua” menggunakan data dari tabel.
-- [ ] (4) Testing build.
-- [x] (5) Update status: centang selesai untuk langkah yang dilakukan.
+## In progress
+- [ ] Rewrite `src/components/admin/admin-galeri.tsx`:
+  - [ ] Remove "Tambah Item" entry point (AdminPageHeader onAdd) and "Tambah Massal" button/dialog.
+  - [ ] Add buttons: "Tambah Foto" and "Tambah Video".
+  - [ ] Split add dialog into mode FOTO/VIDEO with kategori fixed (no editable Select).
+  - [ ] FOTO:
+    - [ ] Remove field "URL Thumbnail".
+    - [ ] Replace "URL Foto" with dynamic local multi-file select (max 10).
+    - [ ] When user selects files, append next file picker dynamically.
+    - [ ] On submit: upload all selected files, build bulk payload (1 item per file).
+    - [ ] Thumbnail for all created items = uploaded URL of the first selected file.
+  - [ ] VIDEO:
+    - [ ] Keep "URL Video" as text input.
+    - [ ] Replace "URL Thumbnail" with local file select (single).
+    - [ ] On submit: upload thumbnail file, then POST/PUT with thumbnail url.
+  - [ ] Ensure edit flow does not break (FOTO edit uses existing string values; no URL Thumbnail field in UI).
 
-
+## Followup
+- [ ] Manual test in browser:
+  - [ ] Tambah Foto: pick 1..10 files, submit creates N items.
+  - [ ] Thumbnail semua item sama dengan file pertama.
+  - [ ] Tambah Video: thumbnail upload from local select works.
 

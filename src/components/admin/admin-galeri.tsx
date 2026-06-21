@@ -1,24 +1,18 @@
 'use client'
 
-import { useEffect, useState, useMemo, useCallback } from 'react'
-import { apiGet, apiPost, apiPut, apiDelete } from '@/lib/api-client'
+import { useEffect, useMemo, useState, useCallback } from 'react'
+import { apiDelete, apiGet, apiPost, apiPut } from '@/lib/api-client'
 import type { Galeri } from '@/lib/types'
-import { AdminPageHeader, SearchInput, AdminLoading, AdminEmpty } from './_shared'
-import { Card, CardContent } from '@/components/ui/card'
+import { AdminEmpty, AdminLoading, AdminPageHeader, SearchInput } from './_shared'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog'
+import { Textarea } from '@/components/ui/textarea'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,23 +23,31 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Pencil, Trash2, Loader2, Image as ImageIcon, Video, Plus, Upload } from 'lucide-react'
+import { Image as ImageIcon, Loader2, Pencil, Plus, Trash2, Upload, Video } from 'lucide-react'
 import { toast } from 'sonner'
-import { cn } from '@/lib/utils'
+
+type AddMode = 'FOTO' | 'VIDEO'
 
 const emptyForm = {
   judul: '',
-  kategori: 'FOTO',
-  url: '',
+  url: '', // for VIDEO
   thumbnail: '',
   deskripsi: '',
+}
+
+async function uploadSingle(file: File, category?: string) {
+  const fd = new FormData()
+  fd.append('file', file)
+  if (category) fd.append('category', category)
+
+  const res = await fetch('/api/upload/thumbnail', {
+    method: 'POST',
+    body: fd,
+  })
+
+  const data = (await res.json()) as { url?: string; error?: string }
+  if (!res.ok || !data.url) throw new Error(data.error || 'Upload gagal')
+  return data.url
 }
 
 export function AdminGaleri() {
@@ -54,16 +56,23 @@ export function AdminGaleri() {
   const [activeTab, setActiveTab] = useState<'all' | 'FOTO' | 'VIDEO'>('all')
   const [search, setSearch] = useState('')
 
+  // dialog
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [bulkOpen, setBulkOpen] = useState(false)
+  const [mode, setMode] = useState<AddMode>('FOTO')
   const [editing, setEditing] = useState<Galeri | null>(null)
-  const [form, setForm] = useState(emptyForm)
-  const [bulkUrls, setBulkUrls] = useState('')
-  const [bulkKategori, setBulkKategori] = useState('FOTO')
-  const [saving, setSaving] = useState(false)
 
+  const [saving, setSaving] = useState(false)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
+
+  const [form, setForm] = useState(emptyForm)
+  const [fotoFiles, setFotoFiles] = useState<File[]>([])
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null)
+  const [thumbnailPreview, setThumbnailPreview] = useState<string>('')
+
+  // dynamic file inputs
+  const maxFotoFiles = 10
+  const [fotoPickCount, setFotoPickCount] = useState(1)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -90,41 +99,147 @@ export function AdminGaleri() {
     })
   }, [items, search, activeTab])
 
-  const openAdd = () => {
+  const openAdd = (m: AddMode) => {
     setEditing(null)
+    setMode(m)
     setForm(emptyForm)
+    setFotoFiles([])
+    setThumbnailFile(null)
+    setThumbnailPreview('')
+    setFotoPickCount(1)
     setDialogOpen(true)
   }
 
   const openEdit = (item: Galeri) => {
     setEditing(item)
+    const m: AddMode = item.kategori === 'VIDEO' ? 'VIDEO' : 'FOTO'
+    setMode(m)
+
     setForm({
       judul: item.judul,
-      kategori: item.kategori,
-      url: item.url,
+      url: item.url || '',
       thumbnail: item.thumbnail || '',
       deskripsi: item.deskripsi || '',
     })
+
+    // FOTO edit: url/thumbnail akan di-handle via select file pertama bila user memilih
+    setFotoFiles([])
+    setThumbnailFile(null)
+    setThumbnailPreview('')
+    setFotoPickCount(1)
+
     setDialogOpen(true)
   }
 
-  const handleSave = async () => {
-    if (!form.judul.trim() || !form.url.trim()) {
-      toast.error('Judul dan URL wajib diisi')
+  const resetFotoPick = () => {
+    setFotoFiles([])
+    setFotoPickCount(1)
+  }
+
+  const onPickFoto = (idx: number, fileList: FileList | null) => {
+    if (!fileList || fileList.length === 0) return
+    const file = fileList[0]
+
+    setFotoFiles((prev) => {
+      const next = [...prev]
+      next[idx] = file
+      return next.filter(Boolean)
+    })
+
+    // ensure next picker exists until max
+    setFotoPickCount((prev) => {
+      const shouldGrow = idx + 1 <= maxFotoFiles
+      if (!shouldGrow) return prev
+      return Math.max(prev, idx + 2)
+    })
+  }
+
+  const handleSubmit = async () => {
+    const kategori: Galeri['kategori'] = mode
+
+    if (!form.judul.trim()) {
+      toast.error('Judul wajib diisi')
       return
     }
-    setSaving(true)
+
     try {
-      const payload = { ...form }
-      if (editing) {
-        await apiPut(`/api/galeri/${editing.id}`, payload)
-        toast.success('Galeri berhasil diperbarui')
+      setSaving(true)
+
+      if (mode === 'FOTO') {
+        const files = fotoFiles.filter(Boolean)
+        if (files.length === 0) {
+          toast.error('Pilih minimal 1 foto')
+          return
+        }
+
+        const filesToUpload = editing ? [files[0]] : files
+        const urls = await Promise.all(filesToUpload.map((f) => uploadSingle(f, 'photos')))
+        const url = urls[0]
+        const thumbnailUrl = urls[0]
+
+        if (editing) {
+          const payload = {
+            judul: form.judul,
+            kategori,
+            url,
+            thumbnail: thumbnailUrl,
+            deskripsi: form.deskripsi || null,
+          }
+          await apiPut(`/api/galeri/${editing.id}`, payload)
+          toast.success('Galeri FOTO berhasil diperbarui')
+        } else {
+          // bulk create: 1 item per file
+          const allUrls = await Promise.all(files.map((f) => uploadSingle(f, 'photos')))
+          const thumb = allUrls[0]
+          const payloadItems = allUrls.map((u, i) => ({
+            judul: payloadJudulFoto(form.judul, i),
+            kategori,
+            url: u,
+            thumbnail: thumb,
+            deskripsi: form.deskripsi || undefined,
+          }))
+
+          await apiPost('/api/galeri', { items: payloadItems })
+          toast.success(`${payloadItems.length} item FOTO berhasil ditambahkan`)
+        }
       } else {
-        await apiPost('/api/galeri', payload)
-        toast.success('Galeri berhasil ditambahkan')
+        // VIDEO
+        if (!form.url.trim()) {
+          toast.error('URL Video wajib diisi')
+          return
+        }
+        if (!thumbnailFile) {
+          toast.error('Pilih minimal 1 file thumbnail untuk VIDEO')
+          return
+        }
+
+        const thumbnailUrl = await uploadSingle(thumbnailFile, 'thumbnails')
+
+        if (editing) {
+          const payload = {
+            judul: form.judul,
+            kategori,
+            url: form.url,
+            thumbnail: thumbnailUrl,
+            deskripsi: form.deskripsi || null,
+          }
+          await apiPut(`/api/galeri/${editing.id}`, payload)
+          toast.success('Galeri VIDEO berhasil diperbarui')
+        } else {
+          const payload = {
+            judul: form.judul,
+            kategori,
+            url: form.url,
+            thumbnail: thumbnailUrl,
+            deskripsi: form.deskripsi || null,
+          }
+          await apiPost('/api/galeri', payload)
+          toast.success('Galeri VIDEO berhasil ditambahkan')
+        }
       }
+
       setDialogOpen(false)
-      fetchData()
+      await fetchData()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Gagal menyimpan')
     } finally {
@@ -132,33 +247,9 @@ export function AdminGaleri() {
     }
   }
 
-  const handleBulkAdd = async () => {
-    const urls = bulkUrls
-      .split('\n')
-      .map((s) => s.trim())
-      .filter(Boolean)
-    if (urls.length === 0) {
-      toast.error('Masukkan minimal satu URL')
-      return
-    }
-    setSaving(true)
-    try {
-      const items = urls.map((url, i) => ({
-        judul: `${bulkKategori === 'FOTO' ? 'Foto' : 'Video'} ${Date.now()}-${i + 1}`,
-        kategori: bulkKategori,
-        url,
-        thumbnail: url,
-      }))
-      await apiPost('/api/galeri', { items })
-      toast.success(`${items.length} item berhasil ditambahkan`)
-      setBulkOpen(false)
-      setBulkUrls('')
-      fetchData()
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Gagal menambahkan')
-    } finally {
-      setSaving(false)
-    }
+  const payloadJudulFoto = (base: string, idx: number) => {
+    if (idx === 0) return base
+    return `${base} ${idx + 1}`
   }
 
   const handleDelete = async () => {
@@ -181,21 +272,21 @@ export function AdminGaleri() {
       <AdminPageHeader
         title="Galeri"
         description="Kelola galeri foto dan video PPDI Cikampek"
-        onAdd={openAdd}
-        addLabel="Tambah Item"
       >
-        <Button variant="outline" onClick={() => setBulkOpen(true)}>
-          <Upload className="w-4 h-4 mr-2" />
-          Tambah Massal
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => openAdd('FOTO')}>
+            <Upload className="w-4 h-4 mr-2" />
+            Tambah Foto
+          </Button>
+          <Button variant="outline" onClick={() => openAdd('VIDEO')}>
+            <Video className="w-4 h-4 mr-2" />
+            Tambah Video
+          </Button>
+        </div>
         <SearchInput value={search} onChange={setSearch} placeholder="Cari galeri..." />
       </AdminPageHeader>
 
-      <Tabs
-        value={activeTab}
-        onValueChange={(v) => setActiveTab(v as typeof activeTab)}
-        className="mb-4"
-      >
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="mb-4">
         <TabsList>
           <TabsTrigger value="all">Semua</TabsTrigger>
           <TabsTrigger value="FOTO">Foto</TabsTrigger>
@@ -217,11 +308,7 @@ export function AdminGaleri() {
             <Card key={g.id} className="overflow-hidden group">
               <div className="aspect-square bg-muted relative">
                 {g.kategori === 'FOTO' ? (
-                  <img
-                    src={g.thumbnail || g.url}
-                    alt={g.judul}
-                    className="w-full h-full object-cover"
-                  />
+                  <img src={g.thumbnail || g.url} alt={g.judul} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
                     <Video className="w-10 h-10 text-primary" />
@@ -238,12 +325,7 @@ export function AdminGaleri() {
                   </Badge>
                 </div>
                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                  <Button
-                    size="icon"
-                    variant="secondary"
-                    className="h-9 w-9"
-                    onClick={() => openEdit(g)}
-                  >
+                  <Button size="icon" variant="secondary" className="h-9 w-9" onClick={() => openEdit(g)}>
                     <Pencil className="w-4 h-4" />
                   </Button>
                   <Button
@@ -258,65 +340,100 @@ export function AdminGaleri() {
               </div>
               <CardContent className="p-3">
                 <p className="text-sm font-medium line-clamp-1">{g.judul}</p>
-                {g.deskripsi && (
-                  <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
-                    {g.deskripsi}
-                  </p>
-                )}
+                {g.deskripsi && <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{g.deskripsi}</p>}
               </CardContent>
             </Card>
           ))}
         </div>
       )}
 
-      {/* Single Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{editing ? 'Edit Galeri' : 'Tambah Galeri'}</DialogTitle>
+            <DialogTitle>
+              {editing ? 'Edit Galeri' : mode === 'FOTO' ? 'Tambah Foto' : 'Tambah Video'}
+            </DialogTitle>
             <DialogDescription>
-              {editing ? 'Perbarui item galeri' : 'Tambah item galeri baru'}
+              {mode === 'FOTO'
+                ? 'Pilih file foto lokal (maks 10). Thumbnail otomatis dari file pertama.'
+                : 'Pilih file thumbnail lokal untuk video.'}
             </DialogDescription>
           </DialogHeader>
+
           <div className="space-y-4 py-2">
             <div>
               <Label>Judul *</Label>
-              <Input
-                value={form.judul}
-                onChange={(e) => setForm({ ...form, judul: e.target.value })}
-              />
+              <Input value={form.judul} onChange={(e) => setForm({ ...form, judul: e.target.value })} />
             </div>
-            <div>
-              <Label>Kategori</Label>
-              <Select
-                value={form.kategori}
-                onValueChange={(v) => setForm({ ...form, kategori: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="FOTO">Foto</SelectItem>
-                  <SelectItem value="VIDEO">Video</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>URL {form.kategori === 'FOTO' ? 'Foto' : 'Video'} *</Label>
-              <Input
-                value={form.url}
-                onChange={(e) => setForm({ ...form, url: e.target.value })}
-                placeholder="https://..."
-              />
-            </div>
-            <div>
-              <Label>URL Thumbnail (opsional)</Label>
-              <Input
-                value={form.thumbnail}
-                onChange={(e) => setForm({ ...form, thumbnail: e.target.value })}
-                placeholder="Kosongkan untuk menggunakan URL utama"
-              />
-            </div>
+
+            {mode === 'VIDEO' && (
+              <div>
+                <Label>URL Video *</Label>
+                <Input
+                  value={form.url}
+                  onChange={(e) => setForm({ ...form, url: e.target.value })}
+                  placeholder="https://..."
+                />
+              </div>
+            )}
+
+            {mode === 'FOTO' && (
+              <div className="space-y-2">
+                <Label>URL Foto *</Label>
+                <div className="text-sm text-muted-foreground">
+                  Gunakan tombol pilih file berikut. Setelah memilih, input berikutnya akan muncul otomatis.
+                </div>
+
+                <div className="space-y-2">
+                  {Array.from({ length: Math.min(fotoPickCount, maxFotoFiles) }).map((_, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="block w-full text-sm"
+                        onChange={(e) => onPickFoto(idx, e.target.files)}
+                        disabled={fotoFiles.length > idx && !!fotoFiles[idx]}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => resetFotoPick()}
+                        disabled={fotoFiles.length === 0}
+                      >
+                        Reset
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="text-xs text-muted-foreground">
+                  Dipilih: {fotoFiles.filter(Boolean).length}/{maxFotoFiles}
+                </div>
+              </div>
+            )}
+
+            {mode === 'VIDEO' && (
+              <div className="space-y-2">
+                <Label>URL Thumbnail *</Label>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0] || null
+                    setThumbnailFile(f)
+                    setThumbnailPreview(f ? URL.createObjectURL(f) : '')
+                  }}
+                />
+                {thumbnailPreview && (
+                  <div className="mt-2">
+                    <img src={thumbnailPreview} alt="thumbnail preview" className="w-24 h-24 object-cover rounded" />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* FOTO: URL Thumbnail dihilangkan */}
+
             <div>
               <Label>Deskripsi</Label>
               <Textarea
@@ -326,69 +443,21 @@ export function AdminGaleri() {
               />
             </div>
           </div>
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Batal</Button>
-            <Button onClick={handleSave} disabled={saving}>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              Batal
+            </Button>
+            <Button onClick={handleSubmit} disabled={saving}>
               {saving ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Menyimpan...
                 </>
-              ) : editing ? 'Simpan Perubahan' : 'Tambah'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Bulk Add Dialog */}
-      <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Tambah Massal Galeri</DialogTitle>
-            <DialogDescription>
-              Tempel beberapa URL (satu per baris) untuk menambah banyak item sekaligus.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div>
-              <Label>Kategori</Label>
-              <Select
-                value={bulkKategori}
-                onValueChange={setBulkKategori}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="FOTO">Foto</SelectItem>
-                  <SelectItem value="VIDEO">Video</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>URL (satu per baris)</Label>
-              <Textarea
-                value={bulkUrls}
-                onChange={(e) => setBulkUrls(e.target.value)}
-                rows={8}
-                placeholder={'https://example.com/foto1.jpg\nhttps://example.com/foto2.jpg\nhttps://example.com/foto3.jpg'}
-                className="font-mono text-sm"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setBulkOpen(false)}>Batal</Button>
-            <Button onClick={handleBulkAdd} disabled={saving}>
-              {saving ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Menambahkan...
-                </>
+              ) : editing ? (
+                'Simpan Perubahan'
               ) : (
-                <>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Tambah Massal
-                </>
+                'Tambah'
               )}
             </Button>
           </DialogFooter>
@@ -399,9 +468,7 @@ export function AdminGaleri() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Konfirmasi Hapus</AlertDialogTitle>
-            <AlertDialogDescription>
-              Apakah Anda yakin ingin menghapus item ini?
-            </AlertDialogDescription>
+            <AlertDialogDescription>Apakah Anda yakin ingin menghapus item ini?</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleting}>Batal</AlertDialogCancel>
@@ -425,3 +492,4 @@ export function AdminGaleri() {
     </div>
   )
 }
+
